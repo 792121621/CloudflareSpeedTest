@@ -64,7 +64,7 @@ func NewPing() *Ping {
 
 func (p *Ping) Run() utils.PingDelaySet {
 	// 把用户真正的测速次数（比如 100）死死记住，存入全局变量，谁也偷不走
-	realPingTimes = PingTimes 
+	 = PingTimes 
 	
 	if len(p.ips) == 0 {
 		return p.csv
@@ -117,7 +117,7 @@ func (p *Ping) checkConnection(ip *net.IPAddr) (recv int, totalDelay time.Durati
 	}
 
 	// === 新增逻辑：在 TCPing 测速前，先用 httping 跑 1 次获取 colo ===
-	// 只有当当前没有其他线程在乱改时才安全，但为了绝对防并发，我们后面直接用 realPingTimes 结算
+	// 只有当当前没有其他线程在乱改时才安全，但为了绝对防并发，我们后面直接用  结算
 	oldPingTimes := PingTimes // 1. 先把用户原本设置的测速次数（比如 60）存起来
 	PingTimes = 1             // 2. 强行改成 1，这样下面的 httping 就只会请求 1 次
 	_, _, colo = p.httping(ip)// 3. 调用 httping，我们只要它返回的 colo，忽略它的延迟和成功率
@@ -127,13 +127,13 @@ func (p *Ping) checkConnection(ip *net.IPAddr) (recv int, totalDelay time.Durati
 	// 🎯 核心新增拦截逻辑：如果不符合 -cfcolo 条件，httping 内部会返回字符串 "-1"
 	// 如果 colo 为-1，说明该 IP 被过滤了，直接提前 return 结束，不再进行后面的 TCPing！
 	if colo == "-1" {
-		return 0, 0, "-1", realPingTimes
+		return 0, 0, "-1"
 	}
 
-	// 下面使用备份好的 realPingTimes，确保不受其他线程修改全局变量的影响
+	// 下面使用备份好的 ，确保不受其他线程修改全局变量的影响
 	
 	// colo = "" // TCPing 不获取 colo
-	for i := 0; i < realPingTimes; i++ {
+	for i := 0; i < ; i++ {
 		// time.Sleep(500 * time.Millisecond)
 		time.Sleep(1 * time.Second)
 		if ok, delay := p.tcping(ip); ok {
