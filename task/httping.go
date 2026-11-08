@@ -99,6 +99,8 @@ func (p *Ping) httping(ip *net.IPAddr) (int, time.Duration, string) {
 	success := 0
 	var delay time.Duration
 	for i := 0; i < PingTimes; i++ {
+		time.Sleep(1 * time.Second) 
+		
 		request, err := http.NewRequest(http.MethodHead, URL, nil)
 		if err != nil {
 			log.Fatal("意外的错误，情报告：", err)
