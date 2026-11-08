@@ -23,6 +23,9 @@ var (
 	Routines      = defaultRoutines
 	TCPPort   int = defaultPort
 	PingTimes int = defaultPingTimes
+
+	// 👈 声明一个新的全局变量，多线程启动前用来存真正的次数
+	realPingTimes int = defaultPingTimes
 )
 
 type Ping struct {
@@ -60,6 +63,9 @@ func NewPing() *Ping {
 }
 
 func (p *Ping) Run() utils.PingDelaySet {
+	// 把用户真正的测速次数（比如 100）死死记住，存入全局变量，谁也偷不走
+	realPingTimes = PingTimes 
+	
 	if len(p.ips) == 0 {
 		return p.csv
 	}
@@ -104,15 +110,12 @@ func (p *Ping) tcping(ip *net.IPAddr) (bool, time.Duration) {
 }
 
 // pingReceived pingTotalTime
-func (p *Ping) checkConnection(ip *net.IPAddr) (recv int, totalDelay time.Duration, colo string, realPingTimes int) {
+func (p *Ping) checkConnection(ip *net.IPAddr) (recv int, totalDelay time.Duration, colo string) {
 	if Httping {
 		recv, totalDelay, colo = p.httping(ip)
-		realPingTimes = PingTimes
 		return
 	}
 
-	// 把用户真正的测速次数（比如 100）死死记住，存入局部变量，谁也偷不走
-	realPingTimes = PingTimes 
 	// === 新增逻辑：在 TCPing 测速前，先用 httping 跑 1 次获取 colo ===
 	// 只有当当前没有其他线程在乱改时才安全，但为了绝对防并发，我们后面直接用 realPingTimes 结算
 	oldPingTimes := PingTimes // 1. 先把用户原本设置的测速次数（比如 60）存起来
@@ -151,7 +154,7 @@ func (p *Ping) appendIPData(data *utils.PingData) {
 
 // handle tcping
 func (p *Ping) tcpingHandler(ip *net.IPAddr) {
-	recv, totalDlay, colo, realPingTimes := p.checkConnection(ip)
+	recv, totalDlay, colo := p.checkConnection(ip)
 	nowAble := len(p.csv)
 	if recv != 0 {
 		nowAble++
