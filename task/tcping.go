@@ -104,21 +104,26 @@ func (p *Ping) tcping(ip *net.IPAddr) (bool, time.Duration) {
 }
 
 // pingReceived pingTotalTime
-func (p *Ping) checkConnection(ip *net.IPAddr) (recv int, totalDelay time.Duration, colo string) {
+func (p *Ping) checkConnection(ip *net.IPAddr) (recv int, totalDelay time.Duration, colo string, realPingTimes int) {
 	if Httping {
 		recv, totalDelay, colo = p.httping(ip)
+		realPingTimes = PingTimes
 		return
 	}
-	
+
+	// 把用户真正的测速次数（比如 100）死死记住，存入局部变量，谁也偷不走
+	realPingTimes = PingTimes 
 	// === 新增逻辑：在 TCPing 测速前，先用 httping 跑 1 次获取 colo ===
+	// 只有当当前没有其他线程在乱改时才安全，但为了绝对防并发，我们后面直接用 realPingTimes 结算
 	oldPingTimes := PingTimes // 1. 先把用户原本设置的测速次数（比如 60）存起来
-	PingTimes = 2             // 2. 强行改成 2，这样下面的 httping 就只会请求 2 次
+	PingTimes = 1             // 2. 强行改成 1，这样下面的 httping 就只会请求 1 次
 	_, _, colo = p.httping(ip)// 3. 调用 httping，我们只要它返回的 colo，忽略它的延迟和成功率
 	PingTimes = oldPingTimes  // 4. 获取完立马把次数还原本来的数值，不能影响下面的 TCPing
 	// =============================================================
+	// 下面使用备份好的 realPingTimes，确保不受其他线程修改全局变量的影响
 	
 	// colo = "" // TCPing 不获取 colo
-	for i := 0; i < PingTimes; i++ {
+	for i := 0; i < realPingTimes; i++ {
 		// time.Sleep(500 * time.Millisecond)
 		time.Sleep(1 * time.Second)
 		if ok, delay := p.tcping(ip); ok {
@@ -139,7 +144,7 @@ func (p *Ping) appendIPData(data *utils.PingData) {
 
 // handle tcping
 func (p *Ping) tcpingHandler(ip *net.IPAddr) {
-	recv, totalDlay, colo := p.checkConnection(ip)
+	recv, totalDlay, colo, realPingTimes := p.checkConnection(ip)
 	nowAble := len(p.csv)
 	if recv != 0 {
 		nowAble++
@@ -150,7 +155,7 @@ func (p *Ping) tcpingHandler(ip *net.IPAddr) {
 	}
 	data := &utils.PingData{
 		IP:       ip,
-		Sended:   PingTimes,
+		Sended:   realPingTimes,
 		Received: recv,
 		Delay:    totalDlay / time.Duration(recv),
 		Colo:     colo,
