@@ -120,6 +120,13 @@ func (p *Ping) checkConnection(ip *net.IPAddr) (recv int, totalDelay time.Durati
 	_, _, colo = p.httping(ip)// 3. 调用 httping，我们只要它返回的 colo，忽略它的延迟和成功率
 	PingTimes = oldPingTimes  // 4. 获取完立马把次数还原本来的数值，不能影响下面的 TCPing
 	// =============================================================
+	
+	// 🎯 核心新增拦截逻辑：如果不符合 -cfcolo 条件，httping 内部会返回字符串 "-1"
+	// 如果 colo 为-1，说明该 IP 被过滤了，直接提前 return 结束，不再进行后面的 TCPing！
+	if colo == "-1" {
+		return 0, 0, "-1", realPingTimes
+	}
+
 	// 下面使用备份好的 realPingTimes，确保不受其他线程修改全局变量的影响
 	
 	// colo = "" // TCPing 不获取 colo
