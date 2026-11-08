@@ -117,7 +117,7 @@ func (p *Ping) checkConnection(ip *net.IPAddr) (recv int, totalDelay time.Durati
 	PingTimes = oldPingTimes  // 4. 获取完立马把次数还原本来的数值，不能影响下面的 TCPing
 	// =============================================================
 	
-	colo = "" // TCPing 不获取 colo
+	// colo = "" // TCPing 不获取 colo
 	for i := 0; i < PingTimes; i++ {
 		// time.Sleep(500 * time.Millisecond)
 		time.Sleep(1 * time.Second)
