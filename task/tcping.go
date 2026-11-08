@@ -111,8 +111,8 @@ func (p *Ping) checkConnection(ip *net.IPAddr) (recv int, totalDelay time.Durati
 	}
 	colo = "" // TCPing 不获取 colo
 	for i := 0; i < PingTimes; i++ {
-		time.Sleep(500 * time.Millisecond)
-		// time.Sleep(1 * time.Second)
+		// time.Sleep(500 * time.Millisecond)
+		time.Sleep(1 * time.Second)
 		if ok, delay := p.tcping(ip); ok {
 			recv++
 			totalDelay += delay
