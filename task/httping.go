@@ -90,7 +90,7 @@ func (p *Ping) httping(ip *net.IPAddr) (int, time.Duration, string) {
 				if utils.Debug { // 调试模式下，输出更多信息
 					utils.Red.Printf("[调试] IP: %s, 地区码不匹配: %s\n", ip.String(), colo)
 				}
-				return 0, 0, ""
+				return 0, 0, "-1"
 			}
 		}
 	}
