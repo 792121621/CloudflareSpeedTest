@@ -1,0 +1,49 @@
+name: Release Windows amd64
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '发布的 Tag（如 v2.3.4）'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: 0
+        run: |
+          go build -trimpath -ldflags "-s -w -X main.version=${TAG}" -o cfst.exe .
+
+      - name: Package
+        run: |
+          zip cfst_windows_amd64.zip cfst.exe ip.txt ipv6.txt
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" cfst_windows_amd64.zip --clobber
+          else
+            gh release create "$TAG" cfst_windows_amd64.zip \
+              --title "$TAG" --generate-notes --target "$GITHUB_SHA"
+          fi
